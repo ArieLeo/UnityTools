@@ -22,70 +22,36 @@
 //  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using UnityEngine;
+using UnityEditor;
 using System.Collections;
 
 namespace kode80.GUIWrapper
 {
-	public class GUIBase 
+	public class GUIEnumPopup : GUIBase 
 	{
-		public delegate void OnGUIPreAction( GUIBase sender);
-		public OnGUIPreAction onGUIPreAction;
+		public System.Enum value;
 
-		public delegate void OnGUIAction( GUIBase sender);
-		public OnGUIAction onGUIAction;
+		private GUIContent _content;
+		public GUIContent content { get { return _content; } }
 
-		public bool isHidden;
-		public bool isEnabled;
-		public bool shouldStoreLastRect;
-		public int tag;
-		public string controlName;
-
-		private Rect _lastRect;
-		public Rect lastRect { get { return _lastRect; } }
-
-		public GUIBase()
+		public GUIEnumPopup( GUIContent content, System.Enum value, OnGUIAction action=null)
 		{
-			isEnabled = true;
-		}
+			this.value = value;
 
-		public void OnGUI()
-		{
-			if( isHidden == false)
+			_content = content;
+			if( action != null)
 			{
-				bool oldGUIEnabled = GUI.enabled;
-				GUI.enabled = isEnabled;
-				if( controlName != null && controlName.Length > 0)
-				{
-					GUI.SetNextControlName( controlName);
-				}
-				CustomOnGUI();
-				GUI.enabled = oldGUIEnabled;
-
-				if( shouldStoreLastRect && Event.current.type == EventType.Repaint)
-				{
-					_lastRect = GUILayoutUtility.GetLastRect();
-				}
+				onGUIAction += action;
 			}
 		}
 
-		protected virtual void CustomOnGUI()
+		protected override void CustomOnGUI ()
 		{
-			// Subclasses override this to implement OnGUI
-		}
-
-		protected void CallGUIPreAction()
-		{
-			if( onGUIPreAction != null)
+			System.Enum newValue = EditorGUILayout.EnumPopup( _content, value);
+			if( newValue != value)
 			{
-				onGUIPreAction( this);
-			}
-		}
-
-		protected void CallGUIAction()
-		{
-			if( onGUIAction != null)
-			{
-				onGUIAction( this);
+				value = newValue;
+				CallGUIAction();
 			}
 		}
 	}

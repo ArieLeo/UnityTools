@@ -22,70 +22,61 @@
 //  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using UnityEngine;
+using System.IO;
 using System.Collections;
 
-namespace kode80.GUIWrapper
+namespace kode80.EditorTools
 {
-	public class GUIBase 
+	// The RecordVideo component is used by RecordVideoWindow
+	// to record frames during play mode and should't be added
+	// manually by the user, so hide it from the component menu.
+	[AddComponentMenu("")]
+	public class RecordVideo : MonoBehaviour 
 	{
-		public delegate void OnGUIPreAction( GUIBase sender);
-		public OnGUIPreAction onGUIPreAction;
+		public int captureFramerate = 60;
+		public int superSize = 1;
+		public string folderPath;
 
-		public delegate void OnGUIAction( GUIBase sender);
-		public OnGUIAction onGUIAction;
+		private bool _isRecording = false;
+		public bool isRecording { get { return _isRecording; } }
 
-		public bool isHidden;
-		public bool isEnabled;
-		public bool shouldStoreLastRect;
-		public int tag;
-		public string controlName;
+		private int _sceneNumber = 0;
+		public int sceneNumber { get { return _sceneNumber; } }
 
-		private Rect _lastRect;
-		public Rect lastRect { get { return _lastRect; } }
+		private int _frameNumber = 0;
 
-		public GUIBase()
+		void Start () 
 		{
-			isEnabled = true;
+			Time.captureFramerate = captureFramerate;
 		}
 
-		public void OnGUI()
+		void Update () 
 		{
-			if( isHidden == false)
+			if( _isRecording)
 			{
-				bool oldGUIEnabled = GUI.enabled;
-				GUI.enabled = isEnabled;
-				if( controlName != null && controlName.Length > 0)
-				{
-					GUI.SetNextControlName( controlName);
-				}
-				CustomOnGUI();
-				GUI.enabled = oldGUIEnabled;
-
-				if( shouldStoreLastRect && Event.current.type == EventType.Repaint)
-				{
-					_lastRect = GUILayoutUtility.GetLastRect();
-				}
+				string path = string.Format("{0}/Scene{1:D03}Frame{2:D08}.png", folderPath, _sceneNumber, _frameNumber );
+				Application.CaptureScreenshot( path, superSize);
+				_frameNumber++;
 			}
 		}
 
-		protected virtual void CustomOnGUI()
+		public bool StartRecording()
 		{
-			// Subclasses override this to implement OnGUI
-		}
-
-		protected void CallGUIPreAction()
-		{
-			if( onGUIPreAction != null)
+			if( _isRecording == false && Directory.Exists( folderPath))
 			{
-				onGUIPreAction( this);
+				_isRecording = true;
 			}
+
+			return _isRecording;
 		}
 
-		protected void CallGUIAction()
+		public void StopRecording()
 		{
-			if( onGUIAction != null)
+			if( _isRecording == true)
 			{
-				onGUIAction( this);
+				_isRecording = false;
+				_sceneNumber++;
+				_frameNumber = 0;
 			}
 		}
 	}
